@@ -4,6 +4,7 @@ import { ThemedText } from './ThemedText';
 import { Credential } from '@/models/Credential';
 
 const CredentialCard = ({item}: {item: Credential}) => {
+    // TODO: add username and password reevealk directly in the card, consider to make it  a list instead of a  grid
     return (
         <View style={styles.card}>
                 <Image source={require('@/assets/images/key.png')} style={styles.keyImage} />
