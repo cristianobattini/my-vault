@@ -10,6 +10,8 @@ import CredentialCard from '@/components/CredentialCard';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import BottomSheet from '@/components/BottomSheet';
 import Input from '@/components/Input';
+import { useForm, Controller } from 'react-hook-form';
+import { create } from 'react-test-renderer';
 
 const Index = () => {
     const realm = useRealm();
@@ -17,6 +19,7 @@ const Index = () => {
     const tags = useQuery(Tag);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [createNewCredential, setCreateNewCredential] = useState<boolean>(false);
+    const { control, handleSubmit, formState: { errors } } = useForm();
 
     // Filter credentials by the selected tag
     interface FilteredCredentials {
@@ -35,36 +38,33 @@ const Index = () => {
         )
         : credentials;
 
-    const createMockCredential = () => {
+
+    const createNewCredentialFunc = (cred: Credential) => {
         realm.write(() => {
-            realm.create(Credential.schema.name, {
-                _id: new Realm.BSON.ObjectId(),
-                title: 'Linkedin Second Test Title To See if it works',
-                username: 'cristiano.battini@gmail.com',
-                password: 'password123',
-                url: 'https://www.linked.com',
-                notes: 'Some notes about Linkedin',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                isFavorite: false,
-                isArchived: false,
-            });
+            realm.create(Credential.schema.name, cred);
         });
     };
+
+    const handleCreateNewCredential = (data: any) => {
+        createNewCredentialFunc({
+            _id: new Realm.BSON.ObjectId(),
+            title: data.title,
+            username: data.username,
+            password: data.password,
+            url: '',
+            notes: '',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isFavorite: false,
+            isArchived: false,
+        } as Credential);
+
+        setCreateNewCredential(false);
+    }
 
     const toggleCreateNewCredential = () => {
         setCreateNewCredential(!createNewCredential);
     };
-
-    const handleCreateNewCredential = () => { }
-
-    // TODO: add the form
-
-    useEffect(() => {
-        // createMockCredential();
-
-    }
-        , []);
 
     return (
         <>
@@ -73,17 +73,59 @@ const Index = () => {
                 onRequestClose={toggleCreateNewCredential}
             >
                 <View style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center' }}>
-                    <Input label={'title'} placeholder='credential' iconName={'tag'} />
-                    <Input label={'username / email'} placeholder='username@email.com' iconName={'user'} />
-                    <Input label={'password'} placeholder='p@55w0rd' passwordVisibility={true} iconName={'key'} />
+                    <Controller control={control} name='title' rules={{ required: 'You must enter credential\'s title' }}
+                        render={({ field: { onChange, value } }) => {
+                            return (
+                                <Input
+                                    label={'title'}
+                                    placeholder='credential'
+                                    iconName={'tag'}
+                                    onChangeText={onChange}
+                                    value={value}
+                                />
+                            )
+                        }} />
+                    {errors.title && <Text style={styles.errorText}>{errors.title.message as string}</Text>}
+
+                    <Controller control={control} name='username' rules={{ required: 'You must enter credential\'s username' }}
+                        render={({ field: { onChange, value } }) => {
+                            return (
+                                <Input
+                                    label={'username / email'}
+                                    placeholder='username@email.com'
+                                    iconName='user'
+                                    onChangeText={onChange}
+                                    value={value}
+                                />
+                            )
+                        }} />
+                    {errors.username && <Text style={styles.errorText}>{errors.username.message as string}</Text>}
+
+
+                    <Controller control={control} name='password' rules={{ required: 'You must enter credential\'s password' }}
+                        render={({ field: { onChange, value } }) => {
+                            return (
+                                <Input
+                                    label={'password'}
+                                    placeholder='p@55w0rd'
+                                    passwordVisibility={true}
+                                    iconName='key'
+                                    onChangeText={onChange}
+                                    value={value}
+                                />
+                            )
+                        }
+                        } />
+                    {errors.password && <Text style={styles.errorText}>{errors.password.message as string}</Text>}
+
 
                     <View style={styles.buttonsContainer}>
-                        <View style={[styles.formButton, { backgroundColor:  'green' }]}>
-                            <TouchableOpacity onPress={handleCreateNewCredential}>
+                        <View style={[styles.formButton, { backgroundColor: 'green' }]}>
+                            <TouchableOpacity onPress={handleSubmit(handleCreateNewCredential)}>
                                 <ThemedText type="subtitle">Create</ThemedText>
                             </TouchableOpacity>
                         </View>
-                        <View style={[styles.formButton, { backgroundColor:  'red' }]}>
+                        <View style={[styles.formButton, { backgroundColor: 'red' }]}>
                             <TouchableOpacity onPress={toggleCreateNewCredential}>
                                 <ThemedText type="subtitle">Cancel</ThemedText>
                             </TouchableOpacity>
@@ -170,6 +212,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 12,
+        marginTop: 5,
+        marginLeft: 5,
     },
     tagList: {
         marginBottom: 20,

@@ -11,10 +11,16 @@ interface InputProps {
     label?: string;
     passwordVisibility?: boolean;
     iconName: FontAwesomeIconNames;
+    onChangeText?: (text: string) => void;
+    value?: string;
 }
 
-const Input: React.FC<InputProps> = ({ placeholder, iconName, label, passwordVisibility = false }) => {
+const Input: React.FC<InputProps> = ({ placeholder, iconName, label, passwordVisibility = false, onChangeText, value }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+    useState(() => {
+        setIsPasswordVisible(!passwordVisibility);
+    });
 
     return (
         <View style={{ width: '100%', marginVertical: 10 }}>
@@ -31,6 +37,8 @@ const Input: React.FC<InputProps> = ({ placeholder, iconName, label, passwordVis
                     placeholder={placeholder}
                     style={styles.input}
                     secureTextEntry={!isPasswordVisible}
+                    onChangeText={onChangeText}
+                    value={value}
                 />
                 {passwordVisibility && (
                     <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>

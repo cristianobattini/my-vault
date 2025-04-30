@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#00000099',
     },
     modalForm: {
-        height: '55%',
+        height: '75%',
         width: '90%',
         backgroundColor: '#0f0f0f',
         borderRadius: 10,
