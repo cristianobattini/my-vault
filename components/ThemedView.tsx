@@ -18,8 +18,8 @@ export function ThemedView({
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
 
   return (
-    <SafeAreaView style={{ backgroundColor }}>
-      <View style={[{ padding }, style]} {...otherProps} />
+    <SafeAreaView style={{ backgroundColor: backgroundColor, display: 'flex', height: '100%' }}>
+      <View style={[{ paddingHorizontal: padding, paddingVertical: padding+20 }, style]} {...otherProps} />
     </SafeAreaView>
   );
 }

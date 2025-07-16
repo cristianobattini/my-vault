@@ -69,9 +69,9 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     input: {
-        color: '#fff',
+        color: '#000', // TODO: fix for theme
         width: '82%',
-        fontSize: 18,
+        fontSize: 16,
         textAlign: 'left',
     },
 });

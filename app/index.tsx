@@ -12,6 +12,8 @@ import BottomSheet from '@/components/BottomSheet';
 import Input from '@/components/Input';
 import { useForm, Controller } from 'react-hook-form';
 import { create } from 'react-test-renderer';
+import FloatingButton from '@/components/FloatingButton';
+import { Octicons } from '@expo/vector-icons';
 
 const Index = () => {
     const realm = useRealm();
@@ -122,12 +124,12 @@ const Index = () => {
                     <View style={styles.buttonsContainer}>
                         <View style={[styles.formButton, { backgroundColor: 'green' }]}>
                             <TouchableOpacity onPress={handleSubmit(handleCreateNewCredential)}>
-                                <ThemedText type="subtitle">Create</ThemedText>
+                                <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Create</ThemedText>
                             </TouchableOpacity>
                         </View>
                         <View style={[styles.formButton, { backgroundColor: 'red' }]}>
                             <TouchableOpacity onPress={toggleCreateNewCredential}>
-                                <ThemedText type="subtitle">Cancel</ThemedText>
+                                <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Cancel</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -140,33 +142,46 @@ const Index = () => {
                     <ThemedText type="title">
                         MyVault
                     </ThemedText>
-                    <TouchableOpacity onPress={toggleCreateNewCredential}>
-                        <FontAwesome name="plus" size={24} color={useThemeColor({ light: '#000', dark: '#fff' }, "text")} />
-                    </TouchableOpacity>
                 </View>
 
                 {/* Tag List */}
-                <FlatList
-                    data={tags}
-                    horizontal
-                    keyExtractor={(item) => item._id.toHexString()}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.tagItem,
-                                selectedTag === item._id.toHexString() && styles.selectedTag,
-                            ]}
-                            onPress={() =>
-                                setSelectedTag(
-                                    selectedTag === item._id.toHexString() ? null : item._id.toHexString()
-                                )
-                            }
-                        >
-                            <Text style={styles.tagText}>{item.name}</Text>
-                        </TouchableOpacity>
-                    )}
-                    style={styles.tagList}
-                />
+                <View style={{ marginTop: 20 }}>
+                    <TouchableOpacity
+                        style={[
+                            styles.tagItem,
+                            // selectedTag === item._id.toHexString() && styles.selectedTag,
+                        ]}
+                        onPress={() => { }
+                            // setSelectedTag(
+                            //     selectedTag === item._id.toHexString() ? null : item._id.toHexString()
+                            // )
+                        }
+                    >
+                        <Octicons name="diff-added" size={24} color="white" />
+                        <ThemedText style={styles.tagText}>Add new tag</ThemedText>
+                    </TouchableOpacity>
+                    <FlatList
+                        data={tags}
+                        horizontal
+                        keyExtractor={(item) => item._id.toHexString()}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={[
+                                    styles.tagItem,
+                                    selectedTag === item._id.toHexString() && styles.selectedTag,
+                                ]}
+                                onPress={() =>
+                                    setSelectedTag(
+                                        selectedTag === item._id.toHexString() ? null : item._id.toHexString()
+                                    )
+                                }
+                            >
+                                <Text style={styles.tagText}>{item.name}</Text>
+                            </TouchableOpacity>
+                        )}
+                        style={styles.tagList}
+                    />
+                </View>
 
                 {/* Credential List or Empty State */}
                 {filteredCredentials.length === 0 ? (
@@ -203,6 +218,8 @@ const Index = () => {
                     />
                 )}
             </ThemedView>
+
+            <FloatingButton onPress={toggleCreateNewCredential} />
         </>
     );
 };
@@ -224,9 +241,13 @@ const styles = StyleSheet.create({
     },
     tagItem: {
         padding: 10,
+        width: '40%',
         marginRight: 10,
         borderRadius: 20,
-        backgroundColor: '#e0e0e0',
+        backgroundColor: '#00000070', // TODO: fix to match tag color
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     selectedTag: {
         backgroundColor: '#007bff',
@@ -273,6 +294,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         marginHorizontal: 10,
         width: '40%',
+        height: 50,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 5,

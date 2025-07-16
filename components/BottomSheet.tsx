@@ -1,7 +1,8 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { FontAwesome } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Modal, Animated, TouchableOpacity } from 'react-native';
+import { ThemedView } from './ThemedView';
 
 interface BottomSheetProps {
     visible: boolean;
@@ -10,16 +11,32 @@ interface BottomSheetProps {
 }
 
 const BottomSheet = ({ visible, children, onRequestClose }: BottomSheetProps) => {
+    const [animatedValue] = useState(new Animated.Value(0)); 
+
+    React.useEffect(() => {
+        Animated.timing(animatedValue, {
+            toValue: visible ? 1 : 0,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    }, [visible]);
+
+    const translateY = animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [300, 0], 
+    });
 
     return (
         <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onRequestClose}>
             <View style={styles.modalContainer}>
-                <View style={styles.modalForm}>
+                <Animated.View
+                    style={[styles.modalForm, { transform: [{ translateY }] }]}
+                >
                     <TouchableOpacity>
-                        <FontAwesome size={24} onPress={onRequestClose} name='close' style={{color: useThemeColor({light: '#000', dark: '#ccc'}, 'text'), alignSelf: 'flex-end'}} />
+                        <FontAwesome size={24} onPress={onRequestClose} name="close" style={{ color: '#000', alignSelf: 'flex-end' }} />
                     </TouchableOpacity>
                     {children}
-                </View>
+                </Animated.View>
             </View>
         </Modal>
     );
@@ -27,26 +44,26 @@ const BottomSheet = ({ visible, children, onRequestClose }: BottomSheetProps) =>
 
 const styles = StyleSheet.create({
     modalContainer: {
+        display: 'flex',
         flex: 1,
         justifyContent: 'flex-end',
         alignItems: 'center',
-        backgroundColor: '#00000099',
     },
     modalForm: {
-        height: '75%',
-        width: '90%',
-        backgroundColor: '#0f0f0f',
+        backgroundColor: "#fff", // TODO: fix for theme
+        height: '55%',
+        width: '100%',
         borderRadius: 10,
-        paddingHorizontal: 10,
+        paddingHorizontal: 20,
         paddingVertical: 20,
-        shadowColor: '#fff',
+        shadowColor: '#000', // TODO: fix for theme
         shadowOffset: {
             width: 0,
-            height: -2,
+            height: -4,
         },
         shadowOpacity: 0.10,
         shadowRadius: 10,
-        elevation: 5,
+        elevation: 10,
     },
 });
 
