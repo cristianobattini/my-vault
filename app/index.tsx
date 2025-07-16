@@ -14,9 +14,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { create } from 'react-test-renderer';
 import FloatingButton from '@/components/FloatingButton';
 import { Octicons } from '@expo/vector-icons';
+import { KeyboardAvoidingProvider } from '@/components/store/KeyboardAvoidingProvider';
 
 const Index = () => {
-    const realm = useRealm();
+ const realm = useRealm();
     const credentials = useQuery(Credential);
     const tags = useQuery(Tag);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -69,69 +70,74 @@ const Index = () => {
     };
 
     return (
-        <>
+        <KeyboardAvoidingProvider>
             <BottomSheet
                 visible={createNewCredential}
                 onRequestClose={toggleCreateNewCredential}
             >
-                <View style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center' }}>
-                    <Controller control={control} name='title' rules={{ required: 'You must enter credential\'s title' }}
-                        render={({ field: { onChange, value } }) => {
-                            return (
-                                <Input
-                                    label={'title'}
-                                    placeholder='credential'
-                                    iconName={'tag'}
-                                    onChangeText={onChange}
-                                    value={value}
-                                />
-                            )
-                        }} />
+                <View style={{ flex: 1, paddingBottom: 20 }}>
+                    <Controller 
+                        control={control} 
+                        name='title' 
+                        rules={{ required: 'You must enter credential\'s title' }}
+                        render={({ field: { onChange, value } }) => (
+                            <Input
+                                label={'Title'}
+                                placeholder='Credential name'
+                                iconName={'tag'}
+                                onChangeText={onChange}
+                                value={value}
+                            />
+                        )} 
+                    />
                     {errors.title && <Text style={styles.errorText}>{errors.title.message as string}</Text>}
 
-                    <Controller control={control} name='username' rules={{ required: 'You must enter credential\'s username' }}
-                        render={({ field: { onChange, value } }) => {
-                            return (
-                                <Input
-                                    label={'username / email'}
-                                    placeholder='username@email.com'
-                                    iconName='user'
-                                    onChangeText={onChange}
-                                    value={value}
-                                />
-                            )
-                        }} />
+                    <Controller 
+                        control={control} 
+                        name='username' 
+                        rules={{ required: 'You must enter credential\'s username' }}
+                        render={({ field: { onChange, value } }) => (
+                            <Input
+                                label={'Username / Email'}
+                                placeholder='username@email.com'
+                                iconName='user'
+                                onChangeText={onChange}
+                                value={value}
+                            />
+                        )} 
+                    />
                     {errors.username && <Text style={styles.errorText}>{errors.username.message as string}</Text>}
 
-
-                    <Controller control={control} name='password' rules={{ required: 'You must enter credential\'s password' }}
-                        render={({ field: { onChange, value } }) => {
-                            return (
-                                <Input
-                                    label={'password'}
-                                    placeholder='p@55w0rd'
-                                    passwordVisibility={true}
-                                    iconName='key'
-                                    onChangeText={onChange}
-                                    value={value}
-                                />
-                            )
-                        }
-                        } />
+                    <Controller 
+                        control={control} 
+                        name='password' 
+                        rules={{ required: 'You must enter credential\'s password' }}
+                        render={({ field: { onChange, value } }) => (
+                            <Input
+                                label={'Password'}
+                                placeholder='p@55w0rd'
+                                passwordVisibility={true}
+                                iconName='key'
+                                onChangeText={onChange}
+                                value={value}
+                            />
+                        )}
+                    />
                     {errors.password && <Text style={styles.errorText}>{errors.password.message as string}</Text>}
 
-
                     <View style={styles.buttonsContainer}>
-                        <View style={[styles.formButton, { backgroundColor: 'green' }]}>
-                            <TouchableOpacity onPress={handleSubmit(handleCreateNewCredential)}>
-                                <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Create</ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                        <View style={[styles.formButton, { backgroundColor: 'red' }]}>
-                            <TouchableOpacity onPress={toggleCreateNewCredential}>
-                                <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Cancel</ThemedText>
-                            </TouchableOpacity>
-                        </View>
+                        <TouchableOpacity 
+                            style={[styles.formButton, { backgroundColor: 'green' }]}
+                            onPress={handleSubmit(handleCreateNewCredential)}
+                        >
+                            <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Create</ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={[styles.formButton, { backgroundColor: 'red' }]}
+                            onPress={toggleCreateNewCredential}
+                        >
+                            <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Cancel</ThemedText>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </BottomSheet>
@@ -157,7 +163,7 @@ const Index = () => {
                             // )
                         }
                     >
-                        <Octicons name="diff-added" size={24} color="white" />
+                        <Octicons name="plus" size={24} color="white" />
                         <ThemedText style={styles.tagText}>Add new tag</ThemedText>
                     </TouchableOpacity>
                     <FlatList
@@ -218,9 +224,9 @@ const Index = () => {
                     />
                 )}
             </ThemedView>
-
+            
             <FloatingButton onPress={toggleCreateNewCredential} />
-        </>
+        </KeyboardAvoidingProvider>
     );
 };
 
@@ -246,6 +252,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: '#00000070', // TODO: fix to match tag color
         display: 'flex',
+        flexDirection: 'row',
+        gap: 8,
         justifyContent: 'center',
         alignItems: 'center'
     },
@@ -286,6 +294,7 @@ const styles = StyleSheet.create({
     },
     buttonsContainer: {
         flexDirection: 'row',
+        justifyContent: 'center',
         flex: 1,
         marginTop: 20,
         marginBottom: 25,

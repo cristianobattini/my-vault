@@ -1,70 +1,136 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
+import useKeyboardAvoiding from '@/hooks/useKeyboardAvoiding';
 import { FontAwesome } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { View, StyleSheet, Modal, Animated, TouchableOpacity } from 'react-native';
-import { ThemedView } from './ThemedView';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  View, 
+  StyleSheet, 
+  Modal, 
+  Animated, 
+  TouchableOpacity,
+  Platform,
+  Dimensions,
+  Keyboard
+} from 'react-native';
 
 interface BottomSheetProps {
-    visible: boolean;
-    children: React.ReactElement;
-    onRequestClose: () => void;
+  visible: boolean;
+  children: React.ReactElement;
+  onRequestClose: () => void;
 }
 
 const BottomSheet = ({ visible, children, onRequestClose }: BottomSheetProps) => {
-    const [animatedValue] = useState(new Animated.Value(0)); 
+  const [animatedValue] = useState(new Animated.Value(0));
+  const { animatedTranslateY } = useKeyboardAvoiding();
+  const sheetHeight = useRef(Dimensions.get('window').height * 0.55);
+  const isKeyboardVisible = useRef(false);
 
-    React.useEffect(() => {
-        Animated.timing(animatedValue, {
-            toValue: visible ? 1 : 0,
-            duration: 300,
-            useNativeDriver: true,
-        }).start();
-    }, [visible]);
-
-    const translateY = animatedValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: [300, 0], 
-    });
-
-    return (
-        <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onRequestClose}>
-            <View style={styles.modalContainer}>
-                <Animated.View
-                    style={[styles.modalForm, { transform: [{ translateY }] }]}
-                >
-                    <TouchableOpacity>
-                        <FontAwesome size={24} onPress={onRequestClose} name="close" style={{ color: '#000', alignSelf: 'flex-end' }} />
-                    </TouchableOpacity>
-                    {children}
-                </Animated.View>
-            </View>
-        </Modal>
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => { isKeyboardVisible.current = true; }
     );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => { isKeyboardVisible.current = false; }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: visible ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [visible]);
+
+  const translateY = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [sheetHeight.current, 0],
+  });
+
+  const combinedTranslateY = Animated.add(
+    translateY,
+    Animated.multiply(
+      animatedTranslateY,
+      animatedValue.interpolate({
+        inputRange: [0.9, 1],
+        outputRange: [0, isKeyboardVisible.current ? 1 : 0],
+        extrapolate: 'clamp',
+      })
+    )
+  );
+
+  return (
+    <Modal 
+      visible={visible} 
+      transparent={true} 
+      animationType="none" 
+      onRequestClose={onRequestClose}
+    >
+      <TouchableOpacity 
+        activeOpacity={1}
+        style={styles.overlay}
+        onPress={onRequestClose}
+      >
+        <View style={styles.modalContainer}>
+          <Animated.View 
+            style={[
+              styles.modalForm, 
+              { 
+                transform: [{ translateY: combinedTranslateY }],
+                height: sheetHeight.current,
+              }
+            ]}
+            onLayout={(e) => {
+              const { height } = e.nativeEvent.layout;
+              sheetHeight.current = height;
+            }}
+          >
+            <TouchableOpacity onPress={onRequestClose}>
+              <FontAwesome 
+                size={24}
+                name="close"
+                style={{ color: '#000', alignSelf: 'flex-end' }}
+              />
+            </TouchableOpacity>
+            {children}
+          </Animated.View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
 };
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        display: 'flex',
-        flex: 1,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalForm: {
+    backgroundColor: "#fff",
+    width: '100%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
     },
-    modalForm: {
-        backgroundColor: "#fff", // TODO: fix for theme
-        height: '55%',
-        width: '100%',
-        borderRadius: 10,
-        paddingHorizontal: 20,
-        paddingVertical: 20,
-        shadowColor: '#000', // TODO: fix for theme
-        shadowOffset: {
-            width: 0,
-            height: -4,
-        },
-        shadowOpacity: 0.10,
-        shadowRadius: 10,
-        elevation: 10,
-    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+  },
 });
 
 export default BottomSheet;

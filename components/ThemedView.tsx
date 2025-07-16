@@ -19,7 +19,7 @@ export function ThemedView({
 
   return (
     <SafeAreaView style={{ backgroundColor: backgroundColor, display: 'flex', height: '100%' }}>
-      <View style={[{ paddingHorizontal: padding, paddingVertical: padding+20 }, style]} {...otherProps} />
+      <View style={[{ paddingHorizontal: padding, paddingVertical: padding+30 }, style]} {...otherProps} />
     </SafeAreaView>
   );
 }

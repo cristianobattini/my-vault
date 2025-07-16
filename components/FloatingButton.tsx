@@ -6,7 +6,7 @@ import { TouchableOpacityProps } from 'react-native-gesture-handler';
 const FloatingButton = ({ onPress }: TouchableOpacityProps) => {
     return (
         <TouchableOpacity style={styles.floatingButton} onPress={onPress}>
-            <Octicons name="diff-added" size={24} color="white" />
+            <Octicons name="plus" size={24} color="white" />
         </TouchableOpacity>
     );
 };
