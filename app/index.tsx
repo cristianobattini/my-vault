@@ -22,6 +22,7 @@ const Index = () => {
     const credentials = useQuery(Credential);
     const tags = useQuery(Tag);
     const [selectedTag, setSelectedTag] = useState<BSON.ObjectId | null>(null);
+    const [showArchived, setShowArchived] = useState<boolean>(false);
     const [showCredentialSheet, setShowCredentialSheet] = useState(false);
     const [showTagSheet, setShowTagSheet] = useState(false);
     const [selectedColor, setSelectedColor] = useState('#808080');
@@ -30,9 +31,9 @@ const Index = () => {
     const { control: tagControl, handleSubmit: handleTagSubmit, reset: resetTagForm } = useForm();
 
     // Filtra le credenziali per tag selezionato
-    const filteredCredentials = selectedTag
+    const filteredCredentials = (selectedTag
         ? credentials.filtered('ANY tags._id == $0', selectedTag)
-        : credentials;
+        : credentials).filter(x => showArchived ? x.isArchived == true : x.isArchived == false)
 
 
 
@@ -77,7 +78,7 @@ const Index = () => {
         <KeyboardAvoidingProvider>
             {/* Create new credential BottomSheet */}
             <BottomSheet
-            heightPrecentile={0.55}
+                heightPrecentile={0.55}
                 visible={showCredentialSheet}
                 onRequestClose={() => setShowCredentialSheet(false)}
             >
@@ -148,7 +149,7 @@ const Index = () => {
 
             {/* Create new tag BottomSheet */}
             <BottomSheet
-            heightPrecentile={0.40}
+                heightPrecentile={0.40}
                 visible={showTagSheet}
                 onRequestClose={() => setShowTagSheet(false)}
             >
@@ -200,6 +201,9 @@ const Index = () => {
             <ThemedView style={styles.container}>
                 <View style={styles.header}>
                     <ThemedText type="title">MyVault</ThemedText>
+                    <TouchableOpacity onPress={() => setShowArchived(!showArchived)}>
+                        <Octicons name={showArchived ? 'chevron-left' : 'archive'} size={24} />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Tags list */}
@@ -221,7 +225,7 @@ const Index = () => {
                             </TouchableOpacity>
                         )}
                     >
-                        
+
                     </FlatList>
                     {selectedTag == null ? null : <TouchableOpacity onPress={() => setSelectedTag(null)}><Octicons name='x' color={'#000'} size={24} /></TouchableOpacity>}
                 </View>
@@ -237,7 +241,7 @@ const Index = () => {
                         keyExtractor={(item) => item._id.toHexString()}
                         contentContainerStyle={styles.credentialList}
                         renderItem={({ item }) => (
-                                <CredentialCard item={item} />
+                                    <CredentialCard item={item} />
                         )}
                     />
                 )}
@@ -270,6 +274,9 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between'
     },
     sheetContainer: {
         flex: 1,
