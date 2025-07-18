@@ -15,13 +15,14 @@ import {
 interface BottomSheetProps {
   visible: boolean;
   children: React.ReactElement;
+  heightPrecentile: number; // from 0 to 1
   onRequestClose: () => void;
 }
 
-const BottomSheet = ({ visible, children, onRequestClose }: BottomSheetProps) => {
+const BottomSheet = ({ visible, children, heightPrecentile, onRequestClose }: BottomSheetProps) => {
   const [animatedValue] = useState(new Animated.Value(0));
   const { animatedTranslateY } = useKeyboardAvoiding();
-  const sheetHeight = useRef(Dimensions.get('window').height * 0.55);
+  const sheetHeight = useRef(Dimensions.get('window').height * heightPrecentile);
   const isKeyboardVisible = useRef(false);
 
   useEffect(() => {

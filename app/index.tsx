@@ -1,312 +1,350 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Text, StyleSheet, TouchableOpacity, Image, View, Modal } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useQuery, useRealm } from '@realm/react';
 import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import CredentialCard from '@/components/CredentialCard';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import BottomSheet from '@/components/BottomSheet';
 import Input from '@/components/Input';
 import { useForm, Controller } from 'react-hook-form';
-import { create } from 'react-test-renderer';
 import FloatingButton from '@/components/FloatingButton';
-import { Octicons } from '@expo/vector-icons';
 import { KeyboardAvoidingProvider } from '@/components/store/KeyboardAvoidingProvider';
+import { BSON } from 'realm';
+import ColorPicker from '@/components/ColorPickers';
+import { Octicons } from '@expo/vector-icons';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import FloatingMenuButton from '@/components/FloatingButton';
 
 const Index = () => {
- const realm = useRealm();
+    const realm = useRealm();
     const credentials = useQuery(Credential);
     const tags = useQuery(Tag);
-    const [selectedTag, setSelectedTag] = useState<string | null>(null);
-    const [createNewCredential, setCreateNewCredential] = useState<boolean>(false);
-    const { control, handleSubmit, formState: { errors } } = useForm();
+    const [selectedTag, setSelectedTag] = useState<BSON.ObjectId | null>(null);
+    const [showCredentialSheet, setShowCredentialSheet] = useState(false);
+    const [showTagSheet, setShowTagSheet] = useState(false);
+    const [selectedColor, setSelectedColor] = useState('#808080');
 
-    // Filter credentials by the selected tag
-    interface FilteredCredentials {
-        filtered: (filterFn: (credential: Credential) => boolean) => Realm.Results<Credential>;
-    }
+    const { control: credentialControl, handleSubmit: handleCredentialSubmit, reset: resetCredentialForm } = useForm();
+    const { control: tagControl, handleSubmit: handleTagSubmit, reset: resetTagForm } = useForm();
 
-    interface FilteredTags {
-        filtered: (query: string, ...args: unknown[]) => Realm.Results<Tag>;
-    }
-
-    const filteredCredentials: Realm.Results<Credential> = selectedTag
-        ? (credentials as unknown as FilteredCredentials).filtered((credential) =>
-            (tags as FilteredTags)
-                .filtered(`_id == $0`, selectedTag)[0]
-                ?.credentialIds.some((id) => id.equals(credential._id))
-        )
+    // Filtra le credenziali per tag selezionato
+    const filteredCredentials = selectedTag
+        ? credentials.filtered('ANY tags._id == $0', selectedTag)
         : credentials;
 
 
-    const createNewCredentialFunc = (cred: Credential) => {
-        realm.write(() => {
-            realm.create(Credential.schema.name, cred);
-        });
-    };
 
     const handleCreateNewCredential = (data: any) => {
-        createNewCredentialFunc({
-            _id: new Realm.BSON.ObjectId(),
-            title: data.title,
-            username: data.username,
-            password: data.password,
-            url: '',
-            notes: '',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isFavorite: false,
-            isArchived: false,
-        } as Credential);
+        realm.write(() => {
+            const newCredential = realm.create(Credential, {
+                _id: new BSON.ObjectId(),
+                title: data.title,
+                username: data.username,
+                password: data.password,
+                url: data.url || '',
+                notes: data.notes || '',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                isFavorite: false,
+                isArchived: false,
+            });
 
-        setCreateNewCredential(false);
-    }
+            if (selectedTag) {
+                const tag = realm.objectForPrimaryKey<Tag>(Tag, selectedTag);
+                if (tag) {
+                    tag.credentials.push(newCredential);
+                }
+            }
+        });
+        setShowCredentialSheet(false)
+    };
 
-    const toggleCreateNewCredential = () => {
-        setCreateNewCredential(!createNewCredential);
+    const handleCreateTag = (data: any) => {
+        realm.write(() => {
+            realm.create(Tag, {
+                _id: new BSON.ObjectId(),
+                name: data.name,
+                colorHex: selectedColor,
+                credentials: [],
+            });
+        });
+        setShowTagSheet(false)
     };
 
     return (
         <KeyboardAvoidingProvider>
+            {/* Create new credential BottomSheet */}
             <BottomSheet
-                visible={createNewCredential}
-                onRequestClose={toggleCreateNewCredential}
+            heightPrecentile={0.55}
+                visible={showCredentialSheet}
+                onRequestClose={() => setShowCredentialSheet(false)}
             >
-                <View style={{ flex: 1, paddingBottom: 20 }}>
-                    <Controller 
-                        control={control} 
-                        name='title' 
-                        rules={{ required: 'You must enter credential\'s title' }}
+                <View style={styles.sheetContainer}>
+                    <Controller
+                        control={credentialControl}
+                        name="title"
+                        rules={{ required: "Inserisci un titolo" }}
                         render={({ field: { onChange, value } }) => (
                             <Input
-                                label={'Title'}
-                                placeholder='Credential name'
+                                label={'Titolo'}
+                                placeholder="Nome della credenziale"
                                 iconName={'tag'}
-                                onChangeText={onChange}
-                                value={value}
-                            />
-                        )} 
-                    />
-                    {errors.title && <Text style={styles.errorText}>{errors.title.message as string}</Text>}
-
-                    <Controller 
-                        control={control} 
-                        name='username' 
-                        rules={{ required: 'You must enter credential\'s username' }}
-                        render={({ field: { onChange, value } }) => (
-                            <Input
-                                label={'Username / Email'}
-                                placeholder='username@email.com'
-                                iconName='user'
-                                onChangeText={onChange}
-                                value={value}
-                            />
-                        )} 
-                    />
-                    {errors.username && <Text style={styles.errorText}>{errors.username.message as string}</Text>}
-
-                    <Controller 
-                        control={control} 
-                        name='password' 
-                        rules={{ required: 'You must enter credential\'s password' }}
-                        render={({ field: { onChange, value } }) => (
-                            <Input
-                                label={'Password'}
-                                placeholder='p@55w0rd'
-                                passwordVisibility={true}
-                                iconName='key'
                                 onChangeText={onChange}
                                 value={value}
                             />
                         )}
                     />
-                    {errors.password && <Text style={styles.errorText}>{errors.password.message as string}</Text>}
+
+                    <Controller
+                        control={credentialControl}
+                        name="username"
+                        rules={{ required: "Inserisci username/email" }}
+                        render={({ field: { onChange, value } }) => (
+                            <Input
+                                label={'Username/Email'}
+                                placeholder="user@example.com"
+                                iconName="user"
+                                onChangeText={onChange}
+                                value={value}
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        control={credentialControl}
+                        name="password"
+                        rules={{ required: "Inserisci una password" }}
+                        render={({ field: { onChange, value } }) => (
+                            <Input
+                                label={'Password'}
+                                placeholder="••••••••"
+                                passwordVisibility={true}
+                                iconName="key"
+                                onChangeText={onChange}
+                                value={value}
+                            />
+                        )}
+                    />
 
                     <View style={styles.buttonsContainer}>
-                        <TouchableOpacity 
-                            style={[styles.formButton, { backgroundColor: 'green' }]}
-                            onPress={handleSubmit(handleCreateNewCredential)}
+                        <TouchableOpacity
+                            style={[styles.button, styles.primaryButton]}
+                            onPress={handleCredentialSubmit(handleCreateNewCredential)}
                         >
-                            <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Create</ThemedText>
+                            <ThemedText style={styles.buttonText}>Crea</ThemedText>
                         </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={[styles.formButton, { backgroundColor: 'red' }]}
-                            onPress={toggleCreateNewCredential}
+
+                        <TouchableOpacity
+                            style={[styles.button, styles.secondaryButton]}
+                            onPress={() => setShowCredentialSheet(false)}
                         >
-                            <ThemedText lightColor='#fff' darkColor='#fff' type="subtitle">Cancel</ThemedText>
+                            <ThemedText style={styles.buttonText}>Annulla</ThemedText>
                         </TouchableOpacity>
                     </View>
                 </View>
             </BottomSheet>
 
-            {/* Main View */}
-            <ThemedView>
+            {/* Create new tag BottomSheet */}
+            <BottomSheet
+            heightPrecentile={0.40}
+                visible={showTagSheet}
+                onRequestClose={() => setShowTagSheet(false)}
+            >
+                <View style={styles.sheetContainer}>
+                    <Controller
+                        control={tagControl}
+                        name="name"
+                        rules={{ required: "Inserisci un nome per il tag" }}
+                        render={({ field: { onChange, value } }) => (
+                            <Input
+                                label={'Nome Tag'}
+                                placeholder="Lavoro, Personale, etc."
+                                iconName={'tag'}
+                                onChangeText={onChange}
+                                value={value}
+                            />
+                        )}
+                    />
+
+                    <View style={{ marginVertical: 15 }}>
+                        <ThemedText type="defaultSemiBold" style={{ marginBottom: 8 }}>
+                            Seleziona un colore
+                        </ThemedText>
+                        <ColorPicker
+                            selectedColor={selectedColor}
+                            onColorSelect={setSelectedColor}
+                        />
+                    </View>
+
+                    <View style={styles.buttonsContainer}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.primaryButton]}
+                            onPress={handleTagSubmit(handleCreateTag)}
+                        >
+                            <ThemedText style={styles.buttonText}>Crea Tag</ThemedText>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.button, styles.secondaryButton]}
+                            onPress={() => setShowTagSheet(false)}
+                        >
+                            <ThemedText style={styles.buttonText}>Annulla</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </BottomSheet>
+
+            {/* Main */}
+            <ThemedView style={styles.container}>
                 <View style={styles.header}>
-                    <ThemedText type="title">
-                        MyVault
-                    </ThemedText>
+                    <ThemedText type="title">MyVault</ThemedText>
                 </View>
 
-                {/* Tag List */}
-                <View style={{ marginTop: 20 }}>
-                    <TouchableOpacity
-                        style={[
-                            styles.tagItem,
-                            // selectedTag === item._id.toHexString() && styles.selectedTag,
-                        ]}
-                        onPress={() => { }
-                            // setSelectedTag(
-                            //     selectedTag === item._id.toHexString() ? null : item._id.toHexString()
-                            // )
-                        }
-                    >
-                        <Octicons name="plus" size={24} color="white" />
-                        <ThemedText style={styles.tagText}>Add new tag</ThemedText>
-                    </TouchableOpacity>
+                {/* Tags list */}
+                <View style={styles.tagSection}>
                     <FlatList
-                        data={tags}
                         horizontal
-                        keyExtractor={(item) => item._id.toHexString()}
+                        data={tags}
                         renderItem={({ item }) => (
                             <TouchableOpacity
+                                onPress={() => setSelectedTag(item._id)}
                                 style={[
                                     styles.tagItem,
-                                    selectedTag === item._id.toHexString() && styles.selectedTag,
+                                    selectedTag?.equals(item._id) && styles.selectedTag,
+                                    { backgroundColor: item.colorHex }
                                 ]}
-                                onPress={() =>
-                                    setSelectedTag(
-                                        selectedTag === item._id.toHexString() ? null : item._id.toHexString()
-                                    )
-                                }
                             >
-                                <Text style={styles.tagText}>{item.name}</Text>
+                                {selectedTag?.equals(item._id) ? <Octicons name='check' size={20} color={'#fff'} /> : null}
+                                <ThemedText style={styles.tagText}>{item.name}</ThemedText>
                             </TouchableOpacity>
                         )}
-                        style={styles.tagList}
-                    />
+                    >
+                        
+                    </FlatList>
+                    {selectedTag == null ? null : <TouchableOpacity onPress={() => setSelectedTag(null)}><Octicons name='x' color={'#000'} size={24} /></TouchableOpacity>}
                 </View>
 
-                {/* Credential List or Empty State */}
+                {/* Credentials list */}
                 {filteredCredentials.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <Image
-                            source={require('@/assets/images/empty.svg')} // TODO: fix it, it does not show the image
-                            style={styles.emptyImage}
-                        />
-                        <ThemedText type="subtitle">
-                            Nessuna credenziale trovata
-                        </ThemedText>
+                    <View style={styles.emptyState}>
+                        <ThemedText type="subtitle">Nessuna credenziale trovata</ThemedText>
                     </View>
                 ) : (
                     <FlatList
                         data={filteredCredentials}
                         keyExtractor={(item) => item._id.toHexString()}
-                        numColumns={2} // Display up to 2 cards per row
-                        columnWrapperStyle={styles.row} // Add spacing between rows
-                        renderItem={({ item }) => {
-                            // Determine the span based on the length of the title or username
-                            const span = item.title.length <= 10 && item.username.length <= 10 ? 1 : 2;
-
-                            return (
-                                <View
-                                    style={[
-                                        styles.cardContainer,
-                                        span === 2 && styles.fullWidthCard, // Adjust style for 2-column span
-                                    ]}
-                                >
-                                    <CredentialCard item={item} />
-                                </View>
-                            );
-                        }}
+                        contentContainerStyle={styles.credentialList}
+                        renderItem={({ item }) => (
+                                <CredentialCard item={item} />
+                        )}
                     />
                 )}
             </ThemedView>
-            
-            <FloatingButton onPress={toggleCreateNewCredential} />
+
+            <FloatingMenuButton
+                mainButtonColor="#FF6B6B"
+                actions={[
+                    {
+                        iconName: "key",
+                        label: "Credential",
+                        onPress: () => setShowCredentialSheet(true),
+                        color: "#4ECDC4"
+                    },
+                    {
+                        iconName: "tag",
+                        label: "Tag",
+                        onPress: () => setShowTagSheet(true),
+                        color: "#45B7D1"
+                    },
+                ]}
+            />
         </KeyboardAvoidingProvider>
     );
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
     header: {
+        padding: 16,
+    },
+    sheetContainer: {
+        flex: 1,
+        paddingBottom: 20,
+        paddingHorizontal: 16,
+    },
+    tagSection: {
+        marginVertical: 16,
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        marginHorizontal: 5
     },
-    errorText: {
-        color: 'red',
-        fontSize: 12,
-        marginTop: 5,
-        marginLeft: 5,
-    },
-    tagList: {
-        marginBottom: 20,
+    tagListContent: {
+        paddingHorizontal: 16,
+        alignItems: 'center',
     },
     tagItem: {
-        padding: 10,
-        width: '40%',
-        marginRight: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: 20,
-        backgroundColor: '#00000070', // TODO: fix to match tag color
-        display: 'flex',
+        marginRight: 8,
         flexDirection: 'row',
-        gap: 8,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center'
+        minHeight: 40,
+    },
+    addTagButton: {
+        backgroundColor: '#3a3a3a',
     },
     selectedTag: {
-        backgroundColor: '#007bff',
+        borderWidth: 2,
+        borderColor: 'black',
     },
     tagText: {
-        color: '#fff',
+        color: 'white',
+        marginLeft: 6,
     },
-    credentialItem: {
-        marginBottom: 15,
-        padding: 15,
-        borderRadius: 8,
-        backgroundColor: '#f0f0f0',
-    },
-    username: {
-        color: '#555',
-    },
-    emptyContainer: {
+    emptyState: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    emptyImage: {
-        width: 200,
-        height: 200,
-        marginBottom: 20,
-        resizeMode: 'contain',
+    credentialList: {
+        padding: 8,
     },
-    row: {
+    credentialRow: {
         justifyContent: 'space-between',
+        marginBottom: 8,
     },
-    cardContainer: {
+    credentialCard: {
         flex: 1,
-        margin: 5,
-    },
-    fullWidthCard: {
-        flex: 1,
+        maxWidth: '48%',
     },
     buttonsContainer: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        flex: 1,
-        marginTop: 20,
-        marginBottom: 25,
+        justifyContent: 'space-between',
+        marginTop: 24,
+        gap: 12,
     },
-    formButton: {
-        paddingVertical: 8,
-        marginHorizontal: 10,
-        width: '40%',
-        height: 50,
+    button: {
+        flex: 1,
+        padding: 14,
+        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 5,
+    },
+    primaryButton: {
+        backgroundColor: '#007AFF',
+    },
+    secondaryButton: {
+        backgroundColor: '#FF3B30',
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: '600',
     },
 });
 

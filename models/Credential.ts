@@ -1,4 +1,5 @@
 import Realm, { BSON } from "realm";
+import { Tag } from './Tag';
 
 export class Credential extends Realm.Object {
     _id!: BSON.ObjectId;
@@ -11,6 +12,7 @@ export class Credential extends Realm.Object {
     updatedAt!: Date;
     isFavorite!: boolean;
     isArchived!: boolean;
+    tags!: Realm.List<Tag>;  // relationship to tags
 
     static schema: Realm.ObjectSchema = {
         name: "Credential",
@@ -26,6 +28,11 @@ export class Credential extends Realm.Object {
             updatedAt: "date",
             isFavorite: "bool",
             isArchived: "bool",
+            tags: {
+                type: 'linkingObjects',
+                objectType: 'Tag',
+                property: 'credentials'
+            }
         },
     };
 
@@ -33,6 +40,7 @@ export class Credential extends Realm.Object {
     toggleFavorite(realm: Realm) {
         realm.write(() => {
             this.isFavorite = !this.isFavorite;
+            this.updatedAt = new Date();
         });
     }
 
@@ -40,6 +48,7 @@ export class Credential extends Realm.Object {
     archive(realm: Realm) {
         realm.write(() => {
             this.isArchived = true;
+            this.updatedAt = new Date();
         });
     }
 
@@ -47,6 +56,23 @@ export class Credential extends Realm.Object {
     unarchive(realm: Realm) {
         realm.write(() => {
             this.isArchived = false;
+            this.updatedAt = new Date();
+        });
+    }
+
+    // Add a tag to the credential
+    addTag(realm: Realm, tag: Tag) {
+        realm.write(() => {
+            tag.addCredential(realm, this);
+            this.updatedAt = new Date();
+        });
+    }
+
+    // Remove a tag from the credential
+    removeTag(realm: Realm, tag: Tag) {
+        realm.write(() => {
+            tag.removeCredential(realm, this);
+            this.updatedAt = new Date();
         });
     }
 }
