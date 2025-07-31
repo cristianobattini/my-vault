@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import React, { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useQuery, useRealm } from '@realm/react';
 import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
@@ -35,6 +35,9 @@ const Index = () => {
     const { control: credentialControl, handleSubmit: handleCredentialSubmit, reset: resetCredentialForm } = useForm();
     const { control: tagControl, handleSubmit: handleTagSubmit, reset: resetTagForm } = useForm();
 
+    const modalAnim = useState(new Animated.Value(0))[0];
+    const scaleAnim = useState(new Animated.Value(1))[0];
+
     // Filtra le credenziali per tag selezionato
     const filteredCredentials = (selectedTag
         ? credentials.filtered('ANY tags._id == $0', selectedTag)
@@ -64,6 +67,20 @@ const Index = () => {
         });
         setShowCredentialSheet(false)
         resetCredentialForm()
+    };
+
+    const handleLongPressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.95,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const handleLongPressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+        }).start();
     };
 
     const handleCreateTag = (data: any) => {
@@ -99,6 +116,20 @@ const Index = () => {
             }
         });
     };
+
+    useEffect(() => {
+        if (tagModalVisible) {
+            Animated.spring(modalAnim, {
+                toValue: 1,
+                useNativeDriver: true,
+            }).start();
+        } else {
+            Animated.spring(modalAnim, {
+                toValue: 0,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [tagModalVisible]);
 
     return (
         <KeyboardAvoidingProvider>
@@ -177,7 +208,7 @@ const Index = () => {
             <BottomSheet
                 heightPrecentile={0.90}
                 visible={showTagSheet}
-                onRequestClose={() => {setShowTagSheet(false); setEditingTag(null)}}
+                onRequestClose={() => { setShowTagSheet(false); setEditingTag(null) }}
             >
                 <View style={styles.sheetContainer}>
                     <Controller
@@ -268,6 +299,10 @@ const Index = () => {
                                         setEditingTag(item);
                                         setTagModalVisible(true);
                                     }}
+                                    onPressIn={handleLongPressIn}
+                                    onPressOut={handleLongPressOut}
+                                    activeOpacity={0.7}
+                                    delayLongPress={300}
                                 >
                                     {selectedTag?.equals(item._id) ? (
                                         <Octicons name="x" size={20} color="#fff" />
@@ -328,15 +363,30 @@ const Index = () => {
 
             {/* Tag modal */}
             <Modal
-                animationType="slide"
+                animationType="none"
                 transparent={true}
                 visible={tagModalVisible}
                 onRequestClose={() => {
-                    setTagModalVisible(false);
                     setEditingTag(null);
+                    setTagModalVisible(false);
                 }}>
                 <View style={styles.centeredView}>
-                    <View style={styles.modalView}>
+                    <Animated.View
+                        style={[
+                            styles.modalView,
+                            {
+                                opacity: modalAnim,
+                                transform: [
+                                    {
+                                        scale: modalAnim.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [0.9, 1],
+                                        })
+                                    }
+                                ]
+                            }
+                        ]}
+                    >
                         <TouchableOpacity onPress={() => { setTagModalVisible(false); setEditingTag(null) }} style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginBottom: 10 }}>
                             <ThemedText style={styles.modalText}>
                                 {editingTag ? `Edit ${editingTag.name}` : 'What action would you like to perform?'}
@@ -373,7 +423,7 @@ const Index = () => {
                                 <ThemedText style={styles.textStyle}>Delete</ThemedText>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
         </KeyboardAvoidingProvider >
