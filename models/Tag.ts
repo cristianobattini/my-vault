@@ -6,6 +6,7 @@ export class Tag extends Realm.Object<Tag> {
   name!: string;
   credentials!: List<Credential>;
   colorHex!: string;
+  iconName!: string;
 
   static schema: Realm.ObjectSchema = {
     name: "Tag",
@@ -15,6 +16,7 @@ export class Tag extends Realm.Object<Tag> {
       name: "string",
       credentials: "Credential[]",
       colorHex: "string",
+      iconName: "string",
     },
   };
 

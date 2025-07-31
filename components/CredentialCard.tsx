@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Image, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Credential } from '@/models/Credential';
 import { useRealm } from '@realm/react';
 import { Octicons } from '@expo/vector-icons';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { RectButton } from 'react-native-gesture-handler';
 import { useThemeColor } from '@/hooks/useThemeColor';
-
 
 const CredentialCard = ({ item }: { item: Credential }) => {
     const realm = useRealm();
@@ -30,40 +29,68 @@ const CredentialCard = ({ item }: { item: Credential }) => {
         });
     };
 
-    // TODO: take this out of the component
-    // TODO:implement delete func
-    const LeftActions = () => (
-        <TouchableOpacity style={styles.deleteButton} onPress={() => alert('Eliminato')}>
-            <Octicons name='trash' size={24} color={'white'} />
-        </TouchableOpacity>
-    );
+    const handleDeleteCredential = () => {
+        realm.write(() => {
+            const credential = realm.objectForPrimaryKey<Credential>('Credential', item._id);
+            if (credential) {
+                realm.delete(credential);
+            }
+        });
+    };
 
-    const RightActions = () => (
-        <TouchableOpacity style={styles.archiveButton} onPress={toggleArchived}>
-            <Octicons name='archive' size={24} color={'white'} />
-        </TouchableOpacity>
-    );
+    const renderLeftActions = (progress: any, dragX: any) => {
+        const trans = dragX.interpolate({
+            inputRange: [0, 50, 100],
+            outputRange: [-20, 0, 0],
+        });
+        return (
+            <RectButton 
+                style={styles.deleteButton} 
+                onPress={handleDeleteCredential}
+            >
+                <View style={styles.actionContent}>
+                    <Octicons name='trash' size={24} color={'white'} />
+                </View>
+            </RectButton>
+        );
+    };
+
+    const renderRightActions = (progress: any, dragX: any) => {
+        return (
+            <RectButton 
+                style={styles.archiveButton} 
+                onPress={toggleArchived}
+            >
+                <View style={styles.actionContent}>
+                    <Octicons name='archive' size={24} color={'white'} />
+                </View>
+            </RectButton>
+        );
+    };
 
     return (
-        <GestureHandlerRootView>
-            <Swipeable renderRightActions={RightActions} renderLeftActions={LeftActions}>
-                <View style={[styles.card, { backgroundColor: useThemeColor({ light: '#fff', dark: '#000' }, 'text') }]}>
-                    <View style={styles.leftContent}>
-                        <Image
-                            source={require('@/assets/images/key.png')}
-                            style={styles.keyImage}
-                        />
-                        <View style={styles.textContainer}>
-                            <ThemedText type='subtitle'>{item.title}</ThemedText>
-                            <ThemedText type='default'>{item.username}</ThemedText>
-                        </View>
+        <Swipeable 
+            renderLeftActions={renderLeftActions}
+            renderRightActions={renderRightActions}
+            leftThreshold={30}
+            rightThreshold={30}
+        >
+            <View style={[styles.card, { backgroundColor: useThemeColor({ light: '#fff', dark: '#000' }, 'text') }]}>
+                <View style={styles.leftContent}>
+                    <Image
+                        source={require('@/assets/images/key.png')}
+                        style={styles.keyImage}
+                    />
+                    <View style={styles.textContainer}>
+                        <ThemedText type='subtitle'>{item.title}</ThemedText>
+                        <ThemedText type='default'>{item.username}</ThemedText>
                     </View>
-                    <TouchableOpacity onPress={toggleFavorite}>
-                        <Octicons name={item.isFavorite ? 'heart-fill' : 'heart'} color={'red'} size={20} />
-                    </TouchableOpacity>
                 </View>
-            </Swipeable>
-        </GestureHandlerRootView >
+                <TouchableOpacity onPress={toggleFavorite}>
+                    <Octicons name={item.isFavorite ? 'star-fill' : 'star'} color={'orange'} size={26} />
+                </TouchableOpacity>
+            </View>
+        </Swipeable>
     );
 };
 
@@ -95,23 +122,21 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         borderRadius: 8,
         marginBottom: 2,
-        paddingHorizontal: 20,
-    },
-    deleteText: {
-        color: '#fff',
-        fontWeight: 'bold',
+        width: 70,
     },
     archiveButton: {
         backgroundColor: 'orange',
         justifyContent: 'center',
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
         borderRadius: 8,
         marginBottom: 2,
-        paddingHorizontal: 20,
+        width: 70,
     },
-    archiveText: {
-        color: '#fff',
-        fontWeight: 'bold',
+    actionContent: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 

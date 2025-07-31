@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useQuery, useRealm } from '@realm/react';
 import { Credential } from '@/models/Credential';
@@ -16,6 +16,7 @@ import ColorPicker from '@/components/ColorPickers';
 import { Octicons } from '@expo/vector-icons';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import FloatingMenuButton from '@/components/FloatingButton';
+import FavoritesToggle from '@/components/FavoritesToggle';
 
 const Index = () => {
     const realm = useRealm();
@@ -23,6 +24,7 @@ const Index = () => {
     const tags = useQuery(Tag);
     const [selectedTag, setSelectedTag] = useState<BSON.ObjectId | null>(null);
     const [showArchived, setShowArchived] = useState<boolean>(false);
+    const [showFavorites, setShowFavorites] = useState<boolean>(false);
     const [showCredentialSheet, setShowCredentialSheet] = useState(false);
     const [showTagSheet, setShowTagSheet] = useState(false);
     const [selectedColor, setSelectedColor] = useState('#808080');
@@ -33,9 +35,7 @@ const Index = () => {
     // Filtra le credenziali per tag selezionato
     const filteredCredentials = (selectedTag
         ? credentials.filtered('ANY tags._id == $0', selectedTag)
-        : credentials).filter(x => showArchived ? x.isArchived == true : x.isArchived == false)
-
-
+        : credentials).filter(x => showArchived ? x.isArchived == true : x.isArchived == false).filter(x => showFavorites ? x.isFavorite == true : true)
 
     const handleCreateNewCredential = (data: any) => {
         realm.write(() => {
@@ -149,7 +149,7 @@ const Index = () => {
 
             {/* Create new tag BottomSheet */}
             <BottomSheet
-                heightPrecentile={0.40}
+                heightPrecentile={0.50}
                 visible={showTagSheet}
                 onRequestClose={() => setShowTagSheet(false)}
             >
@@ -201,34 +201,49 @@ const Index = () => {
             <ThemedView style={styles.container}>
                 <View style={styles.header}>
                     <ThemedText type="title">MyVault</ThemedText>
+                    <FavoritesToggle onToggleFavorite={() => {
+                        setShowFavorites(true)
+                    }} onToggleNotFavorite={() => {
+                        setShowFavorites(false)
+                    }} />
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+                    {/* Tags list */}
+                    <View style={styles.tagSection}>
+                        <FlatList
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            data={tags}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if(selectedTag?.equals(item._id)) {
+                                            setSelectedTag(null)
+                                        } else {
+                                            setSelectedTag(item._id)
+                                        }
+                                    }}
+                                    style={[
+                                        styles.tagItem,
+                                        selectedTag?.equals(item._id) && styles.selectedTag,
+                                        { backgroundColor: item.colorHex }
+                                    ]}
+                                >
+                                    {selectedTag?.equals(item._id) ? <Octicons name='x' size={20} color={'#fff'} /> : null}
+                                    <ThemedText style={styles.tagText}>{item.name}</ThemedText>
+                                </TouchableOpacity>
+                            )}
+                        >
+                        </FlatList>
+                    </View>
+
                     <TouchableOpacity onPress={() => setShowArchived(!showArchived)}>
                         <Octicons name={showArchived ? 'chevron-left' : 'archive'} size={24} />
                     </TouchableOpacity>
                 </View>
 
-                {/* Tags list */}
-                <View style={styles.tagSection}>
-                    <FlatList
-                        horizontal
-                        data={tags}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                onPress={() => setSelectedTag(item._id)}
-                                style={[
-                                    styles.tagItem,
-                                    selectedTag?.equals(item._id) && styles.selectedTag,
-                                    { backgroundColor: item.colorHex }
-                                ]}
-                            >
-                                {selectedTag?.equals(item._id) ? <Octicons name='check' size={20} color={'#fff'} /> : null}
-                                <ThemedText style={styles.tagText}>{item.name}</ThemedText>
-                            </TouchableOpacity>
-                        )}
-                    >
-
-                    </FlatList>
-                    {selectedTag == null ? null : <TouchableOpacity onPress={() => setSelectedTag(null)}><Octicons name='x' color={'#000'} size={24} /></TouchableOpacity>}
-                </View>
+                {showArchived ? <ThemedText type='subtitle' style={{ marginLeft: 15 }}>Archived</ThemedText> : null}
 
                 {/* Credentials list */}
                 {filteredCredentials.length === 0 ? (
@@ -241,7 +256,7 @@ const Index = () => {
                         keyExtractor={(item) => item._id.toHexString()}
                         contentContainerStyle={styles.credentialList}
                         renderItem={({ item }) => (
-                                    <CredentialCard item={item} />
+                            <CredentialCard item={item} />
                         )}
                     />
                 )}
@@ -285,6 +300,7 @@ const styles = StyleSheet.create({
     },
     tagSection: {
         marginVertical: 16,
+        marginRight: 20,
         flexDirection: 'row',
         alignItems: 'center',
         marginHorizontal: 5
@@ -295,20 +311,22 @@ const styles = StyleSheet.create({
     },
     tagItem: {
         paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         borderRadius: 20,
-        marginRight: 8,
+        marginRight: 6,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        textAlign: 'center',
         minHeight: 40,
+        borderWidth: 2,
+        borderColor: 'white'
     },
     addTagButton: {
         backgroundColor: '#3a3a3a',
     },
     selectedTag: {
-        borderWidth: 2,
-        borderColor: 'black',
+        borderWidth: 0
     },
     tagText: {
         color: 'white',
