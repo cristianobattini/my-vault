@@ -14,7 +14,7 @@ import { KeyboardAvoidingProvider } from '@/components/store/KeyboardAvoidingPro
 import { BSON } from 'realm';
 import ColorPicker from '@/components/ColorPickers';
 import { Octicons } from '@expo/vector-icons';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import * as ContextMenu from 'zeego/context-menu'
 import FloatingMenuButton from '@/components/FloatingButton';
 import FavoritesToggle from '@/components/FavoritesToggle';
 
@@ -216,23 +216,35 @@ const Index = () => {
                             showsHorizontalScrollIndicator={false}
                             data={tags}
                             renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        if(selectedTag?.equals(item._id)) {
-                                            setSelectedTag(null)
-                                        } else {
-                                            setSelectedTag(item._id)
-                                        }
-                                    }}
-                                    style={[
-                                        styles.tagItem,
-                                        selectedTag?.equals(item._id) && styles.selectedTag,
-                                        { backgroundColor: item.colorHex }
-                                    ]}
-                                >
-                                    {selectedTag?.equals(item._id) ? <Octicons name='x' size={20} color={'#fff'} /> : null}
-                                    <ThemedText style={styles.tagText}>{item.name}</ThemedText>
-                                </TouchableOpacity>
+                                <ContextMenu.Root>
+                                    <ContextMenu.Trigger>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                if (selectedTag?.equals(item._id)) {
+                                                    setSelectedTag(null)
+                                                } else {
+                                                    setSelectedTag(item._id)
+                                                }
+                                            }}
+                                            style={[
+                                                styles.tagItem,
+                                                selectedTag?.equals(item._id) && styles.selectedTag,
+                                                { backgroundColor: item.colorHex }
+                                            ]}
+                                        >
+                                            {selectedTag?.equals(item._id) ? (
+                                                <Octicons name="x" size={20} color="#fff" />
+                                            ) : null}
+                                            <ThemedText style={styles.tagText}>{item.name}</ThemedText>
+                                        </TouchableOpacity>
+                                    </ContextMenu.Trigger>
+
+                                    <ContextMenu.Content>
+                                        <ContextMenu.Item key="action1" onSelect={() => console.log('Action 1')}>
+                                            <ContextMenu.ItemTitle>Action 1</ContextMenu.ItemTitle>
+                                        </ContextMenu.Item>
+                                    </ContextMenu.Content>
+                                </ContextMenu.Root>
                             )}
                         >
                         </FlatList>
@@ -279,7 +291,7 @@ const Index = () => {
                     },
                 ]}
             />
-        </KeyboardAvoidingProvider>
+        </KeyboardAvoidingProvider >
     );
 };
 

@@ -16,12 +16,14 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@react-native-menu/menu": "^1.2.3",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@realm/react": "^0.11.0",
     "expo": "^53.0.0",
     "expo-asset": "^11.0.5",
     "expo-blur": "~14.1.5",
+    "expo-checkbox": "~4.1.4",
     "expo-constants": "~17.1.7",
     "expo-dev-client": "~5.2.4",
     "expo-font": "~13.3.2",
@@ -38,6 +40,8 @@
     "react-hook-form": "^7.56.1",
     "react-native": "0.79.5",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-ios-context-menu": "^3.1.0",
+    "react-native-ios-utilities": "^5.1.2",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -45,7 +49,7 @@
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
     "realm": "^20.1.0",
-    "expo-checkbox": "~4.1.4"
+    "zeego": "^3.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
