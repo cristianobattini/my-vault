@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useQuery, useRealm } from '@realm/react';
 import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
@@ -29,6 +29,8 @@ const Index = () => {
     const [showTagSheet, setShowTagSheet] = useState(false);
     const [selectedColor, setSelectedColor] = useState('#808080');
     const [selectedIcon, setSelectedIcon] = useState<IconName | undefined>(undefined);
+    const [tagModalVisible, setTagModalVisible] = useState(false);
+    const [editingTag, setEditingTag] = useState<Tag | null>(null);
 
     const { control: credentialControl, handleSubmit: handleCredentialSubmit, reset: resetCredentialForm } = useForm();
     const { control: tagControl, handleSubmit: handleTagSubmit, reset: resetTagForm } = useForm();
@@ -61,22 +63,42 @@ const Index = () => {
             }
         });
         setShowCredentialSheet(false)
+        resetCredentialForm()
     };
 
     const handleCreateTag = (data: any) => {
         realm.write(() => {
-            realm.create(Tag, {
-                _id: new BSON.ObjectId(),
-                name: data.name,
-                colorHex: selectedColor,
-                iconName: selectedIcon,
-                credentials: [],
-            });
+            if (editingTag) {
+                realm.create(Tag, {
+                    ...editingTag,
+                    name: data.name,
+                    colorHex: selectedColor,
+                    iconName: selectedIcon,
+                }, Realm.UpdateMode.Modified);
+                setEditingTag(null)
+            } else {
+                realm.create(Tag, {
+                    _id: new BSON.ObjectId(),
+                    name: data.name,
+                    colorHex: selectedColor,
+                    iconName: selectedIcon,
+                    credentials: [],
+                });
+            }
         });
-        setShowTagSheet(false)
+        setShowTagSheet(false);
+        resetTagForm();
+        setEditingTag(null);
     };
 
-    const deleteTag = (id: ObjectId) => { }
+    const deleteTag = (id: ObjectId) => {
+        realm.write(() => {
+            const tagToDelete = realm.objectForPrimaryKey(Tag, id);
+            if (tagToDelete) {
+                realm.delete(tagToDelete);
+            }
+        });
+    };
 
     return (
         <KeyboardAvoidingProvider>
@@ -155,7 +177,7 @@ const Index = () => {
             <BottomSheet
                 heightPrecentile={0.90}
                 visible={showTagSheet}
-                onRequestClose={() => setShowTagSheet(false)}
+                onRequestClose={() => {setShowTagSheet(false); setEditingTag(null)}}
             >
                 <View style={styles.sheetContainer}>
                     <Controller
@@ -195,7 +217,9 @@ const Index = () => {
                             style={[styles.button, styles.primaryButton]}
                             onPress={handleTagSubmit(handleCreateTag)}
                         >
-                            <ThemedText style={styles.buttonText}>Crea Tag</ThemedText>
+                            <ThemedText style={styles.buttonText}>
+                                {editingTag ? 'Update Tag' : 'Create Tag'}
+                            </ThemedText>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -240,11 +264,15 @@ const Index = () => {
                                             setSelectedTag(item._id);
                                         }
                                     }}
+                                    onLongPress={() => {
+                                        setEditingTag(item);
+                                        setTagModalVisible(true);
+                                    }}
                                 >
                                     {selectedTag?.equals(item._id) ? (
                                         <Octicons name="x" size={20} color="#fff" />
                                     ) : (
-                                        <Octicons name={item.iconName as IconName} color={'#fff'} />
+                                        <Octicons name={item.iconName as IconName} size={16} color={'#fff'} />
                                     )}
                                     <Text style={styles.tagText}>{item.name}</Text>
                                 </TouchableOpacity>
@@ -289,16 +317,107 @@ const Index = () => {
                     {
                         iconName: "tag",
                         label: "Tag",
-                        onPress: () => setShowTagSheet(true),
+                        onPress: () => {
+                            setEditingTag(null)
+                            setShowTagSheet(true)
+                        },
                         color: "#45B7D1"
                     },
                 ]}
             />
+
+            {/* Tag modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={tagModalVisible}
+                onRequestClose={() => {
+                    setTagModalVisible(false);
+                    setEditingTag(null);
+                }}>
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <TouchableOpacity onPress={() => { setTagModalVisible(false); setEditingTag(null) }} style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <ThemedText style={styles.modalText}>
+                                {editingTag ? `Edit ${editingTag.name}` : 'What action would you like to perform?'}
+                            </ThemedText>
+                            <Octicons name='x' size={22} />
+                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <TouchableOpacity
+                                style={[styles.button, { backgroundColor: 'orange' }]}
+                                onPress={() => {
+                                    if (editingTag) {
+                                        setShowTagSheet(true);
+                                        setTagModalVisible(false);
+                                        resetTagForm({
+                                            name: editingTag.name
+                                        });
+                                        setSelectedColor(editingTag.colorHex);
+                                        setSelectedIcon(editingTag.iconName as IconName);
+                                    }
+                                }}>
+                                <Octicons name='pencil' color={'white'} size={18} />
+                                <ThemedText style={styles.textStyle}>Edit</ThemedText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.button, { backgroundColor: 'red' }]}
+                                onPress={() => {
+                                    if (editingTag) {
+                                        deleteTag(editingTag._id);
+                                    }
+                                    setTagModalVisible(false);
+                                    setEditingTag(null);
+                                }}>
+                                <Octicons name='trash' color={'white'} size={18} />
+                                <ThemedText style={styles.textStyle}>Delete</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingProvider >
     );
 };
 
 const styles = StyleSheet.create({
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalView: {
+        margin: 20,
+        height: '20%',
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    buttonOpen: {
+        backgroundColor: '#F194FF',
+    },
+    buttonClose: {
+        backgroundColor: '#2196F3',
+    },
+    textStyle: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: 'center',
+    },
     container: {
         flex: 1,
     },
@@ -334,7 +453,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         textAlign: 'center',
         minHeight: 40,
-        borderWidth: 2,
+        borderWidth: 4,
         borderColor: 'white'
     },
     addTagButton: {
@@ -346,6 +465,7 @@ const styles = StyleSheet.create({
     tagText: {
         color: 'white',
         marginLeft: 6,
+        fontSize: 16
     },
     emptyState: {
         flex: 1,
@@ -371,6 +491,8 @@ const styles = StyleSheet.create({
     },
     button: {
         flex: 1,
+        flexDirection: 'row',
+        gap: 8,
         padding: 14,
         borderRadius: 8,
         alignItems: 'center',
