@@ -48,10 +48,14 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <RealmProvider schemaVersion={2} schema={[Credential, Tag]}>
         <GestureHandlerRootView>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" />
-            </Stack>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="credential-detail"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="+not-found" />
+          </Stack>
         </GestureHandlerRootView>
         <StatusBar style="auto" />
       </RealmProvider>

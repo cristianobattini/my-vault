@@ -7,6 +7,7 @@ import { Octicons } from '@expo/vector-icons';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { RectButton } from 'react-native-gesture-handler';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Link } from 'expo-router';
 
 const CredentialCard = ({ item }: { item: Credential }) => {
     const realm = useRealm();
@@ -44,8 +45,8 @@ const CredentialCard = ({ item }: { item: Credential }) => {
             outputRange: [-20, 0, 0],
         });
         return (
-            <RectButton 
-                style={styles.deleteButton} 
+            <RectButton
+                style={styles.deleteButton}
                 onPress={handleDeleteCredential}
             >
                 <View style={styles.actionContent}>
@@ -57,8 +58,8 @@ const CredentialCard = ({ item }: { item: Credential }) => {
 
     const renderRightActions = (progress: any, dragX: any) => {
         return (
-            <RectButton 
-                style={styles.archiveButton} 
+            <RectButton
+                style={styles.archiveButton}
                 onPress={toggleArchived}
             >
                 <View style={styles.actionContent}>
@@ -69,23 +70,28 @@ const CredentialCard = ({ item }: { item: Credential }) => {
     };
 
     return (
-        <Swipeable 
+        <Swipeable
             renderLeftActions={renderLeftActions}
             renderRightActions={renderRightActions}
             leftThreshold={30}
             rightThreshold={30}
         >
             <View style={[styles.card, { backgroundColor: useThemeColor({ light: '#fff', dark: '#000' }, 'text') }]}>
-                <View style={styles.leftContent}>
-                    <Image
-                        source={require('@/assets/images/key.png')}
-                        style={styles.keyImage}
-                    />
-                    <View style={styles.textContainer}>
-                        <ThemedText type='subtitle'>{item.title}</ThemedText>
-                        <ThemedText type='default'>{item.username}</ThemedText>
+                <Link href={{
+                    pathname: "/credential-detail",
+                    params: { id: item._id.toString() }
+                }} >
+                    <View style={styles.leftContent}>
+                        <Image
+                            source={require('@/assets/images/key.png')}
+                            style={styles.keyImage}
+                        />
+                        <View style={styles.textContainer}>
+                            <ThemedText type='subtitle'>{item.title}</ThemedText>
+                            <ThemedText type='default'>{item.username}</ThemedText>
+                        </View>
                     </View>
-                </View>
+                </Link>
                 <TouchableOpacity onPress={toggleFavorite}>
                     <Octicons name={item.isFavorite ? 'star-fill' : 'star'} color={'orange'} size={26} />
                 </TouchableOpacity>
