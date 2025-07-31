@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useQuery, useRealm } from '@realm/react';
 import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
@@ -9,14 +9,14 @@ import CredentialCard from '@/components/CredentialCard';
 import BottomSheet from '@/components/BottomSheet';
 import Input from '@/components/Input';
 import { useForm, Controller } from 'react-hook-form';
-import FloatingButton from '@/components/FloatingButton';
 import { KeyboardAvoidingProvider } from '@/components/store/KeyboardAvoidingProvider';
 import { BSON } from 'realm';
 import ColorPicker from '@/components/ColorPickers';
 import { Octicons } from '@expo/vector-icons';
-import * as ContextMenu from 'zeego/context-menu'
 import FloatingMenuButton from '@/components/FloatingButton';
 import FavoritesToggle from '@/components/FavoritesToggle';
+import { ObjectId } from 'bson';
+import IconPicker, { IconName } from '@/components/IconPicker';
 
 const Index = () => {
     const realm = useRealm();
@@ -28,6 +28,7 @@ const Index = () => {
     const [showCredentialSheet, setShowCredentialSheet] = useState(false);
     const [showTagSheet, setShowTagSheet] = useState(false);
     const [selectedColor, setSelectedColor] = useState('#808080');
+    const [selectedIcon, setSelectedIcon] = useState<IconName | undefined>(undefined);
 
     const { control: credentialControl, handleSubmit: handleCredentialSubmit, reset: resetCredentialForm } = useForm();
     const { control: tagControl, handleSubmit: handleTagSubmit, reset: resetTagForm } = useForm();
@@ -68,11 +69,14 @@ const Index = () => {
                 _id: new BSON.ObjectId(),
                 name: data.name,
                 colorHex: selectedColor,
+                iconName: selectedIcon,
                 credentials: [],
             });
         });
         setShowTagSheet(false)
     };
+
+    const deleteTag = (id: ObjectId) => { }
 
     return (
         <KeyboardAvoidingProvider>
@@ -149,7 +153,7 @@ const Index = () => {
 
             {/* Create new tag BottomSheet */}
             <BottomSheet
-                heightPrecentile={0.50}
+                heightPrecentile={0.90}
                 visible={showTagSheet}
                 onRequestClose={() => setShowTagSheet(false)}
             >
@@ -177,6 +181,13 @@ const Index = () => {
                             selectedColor={selectedColor}
                             onColorSelect={setSelectedColor}
                         />
+                    </View>
+
+                    <View style={{ marginVertical: 15 }}>
+                        <ThemedText type="defaultSemiBold" style={{ marginBottom: 8 }}>
+                            Seleziona un'icona
+                        </ThemedText>
+                        <IconPicker onIconSelect={setSelectedIcon} selectedIcon={selectedIcon} />
                     </View>
 
                     <View style={styles.buttonsContainer}>
@@ -216,35 +227,27 @@ const Index = () => {
                             showsHorizontalScrollIndicator={false}
                             data={tags}
                             renderItem={({ item }) => (
-                                <ContextMenu.Root>
-                                    <ContextMenu.Trigger>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                if (selectedTag?.equals(item._id)) {
-                                                    setSelectedTag(null)
-                                                } else {
-                                                    setSelectedTag(item._id)
-                                                }
-                                            }}
-                                            style={[
-                                                styles.tagItem,
-                                                selectedTag?.equals(item._id) && styles.selectedTag,
-                                                { backgroundColor: item.colorHex }
-                                            ]}
-                                        >
-                                            {selectedTag?.equals(item._id) ? (
-                                                <Octicons name="x" size={20} color="#fff" />
-                                            ) : null}
-                                            <ThemedText style={styles.tagText}>{item.name}</ThemedText>
-                                        </TouchableOpacity>
-                                    </ContextMenu.Trigger>
-
-                                    <ContextMenu.Content>
-                                        <ContextMenu.Item key="action1" onSelect={() => console.log('Action 1')}>
-                                            <ContextMenu.ItemTitle>Action 1</ContextMenu.ItemTitle>
-                                        </ContextMenu.Item>
-                                    </ContextMenu.Content>
-                                </ContextMenu.Root>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.tagItem,
+                                        selectedTag?.equals(item._id) && styles.selectedTag,
+                                        { backgroundColor: item.colorHex },
+                                    ]}
+                                    onPress={() => {
+                                        if (selectedTag?.equals(item._id)) {
+                                            setSelectedTag(null);
+                                        } else {
+                                            setSelectedTag(item._id);
+                                        }
+                                    }}
+                                >
+                                    {selectedTag?.equals(item._id) ? (
+                                        <Octicons name="x" size={20} color="#fff" />
+                                    ) : (
+                                        <Octicons name={item.iconName as IconName} color={'#fff'} />
+                                    )}
+                                    <Text style={styles.tagText}>{item.name}</Text>
+                                </TouchableOpacity>
                             )}
                         >
                         </FlatList>
@@ -325,7 +328,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 20,
-        marginRight: 6,
+        marginRight: 4,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

@@ -11,6 +11,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { MenuProvider } from 'react-native-popup-menu';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -47,10 +48,10 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <RealmProvider schemaVersion={2} schema={[Credential, Tag]}>
         <GestureHandlerRootView>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
         </GestureHandlerRootView>
         <StatusBar style="auto" />
       </RealmProvider>
