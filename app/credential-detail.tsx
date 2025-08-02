@@ -1,7 +1,7 @@
-import { useRealm } from '@realm/react';
-import { BSON } from 'realm';
-import { Link, useLocalSearchParams, useNavigation } from 'expo-router';
-import { View, StyleSheet, TouchableOpacity, TextInput, Linking, Clipboard } from 'react-native';
+import { useQuery, useRealm } from '@realm/react';
+import { BSON, List } from 'realm';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { View, StyleSheet, TouchableOpacity, TextInput, Linking, Clipboard, Text, FlatList } from 'react-native';
 import { Credential } from '@/models/Credential';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -11,6 +11,10 @@ import BottomSheet from '@/components/BottomSheet';
 import Input from '@/components/Input';
 import { useForm, Controller } from 'react-hook-form';
 import { KeyboardAvoidingProvider } from '@/components/store/KeyboardAvoidingProvider';
+import { Button, Dialog, Portal, Snackbar } from 'react-native-paper';
+import TagsPicker from '@/components/TagsPicker';
+import { IconName } from '@/components/IconPicker';
+import { Tag } from '@/models/Tag';
 
 export default function CredentialDetail() {
     const { id } = useLocalSearchParams();
@@ -20,6 +24,14 @@ export default function CredentialDetail() {
     const [showPassword, setShowPassword] = useState(false);
     const [showEditSheet, setShowEditSheet] = useState(false);
     const [notes, setNotes] = useState('');
+    const [clipboardSnackbarVisible, setClipboardSnackbarVisible] = useState(false);
+    const [notesSnackbarVisible, setNotesSnackbarVisible] = useState(false);
+    const [tagSelectionVisible, setTagSelectionVisible] = useState(false);
+    const [tagDeleteVisible, setTagDeleteVisible] = useState(false);
+    const [selectedTag, setSelectedTag] = useState<Tag>();
+
+    const tags: List<Tag> = useQuery(Tag) as unknown as List<Tag>
+
     const navigation = useNavigation()
 
     const credential = realm.objectForPrimaryKey<Credential>(
@@ -67,6 +79,8 @@ export default function CredentialDetail() {
         realm.write(() => {
             credential.notes = notes
         })
+        setNotesSnackbarVisible(true)
+        setTimeout(() => setNotesSnackbarVisible(false), 2000)
     }
 
     const toggleFavorite = () => {
@@ -94,7 +108,13 @@ export default function CredentialDetail() {
 
     const copyToClipboard = (data: string) => {
         Clipboard.setString(data);
+        showClipboardSnackbar()
     };
+
+    const showClipboardSnackbar = () => {
+        setClipboardSnackbarVisible(true)
+        setTimeout(() => setClipboardSnackbarVisible(false), 2000)
+    }
 
     return (
         <KeyboardAvoidingProvider>
@@ -108,7 +128,6 @@ export default function CredentialDetail() {
                         </TouchableOpacity>
                         <ThemedText type="title">{credential.title}</ThemedText>
                     </View>
-
 
                     <View style={styles.actions}>
                         <TouchableOpacity onPress={toggleFavorite}>
@@ -130,6 +149,39 @@ export default function CredentialDetail() {
                             />
                         </TouchableOpacity>
                     </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', marginBottom: 5, gap: 2 }}>
+                    {credential.tags.length != tags.length && (<TouchableOpacity onPress={() => setTagSelectionVisible(true)} style={[styles.tagItem, { backgroundColor: 'green', gap: 5 }]}>
+                        <Octicons name='plus' color={'white'} size={18} />
+                        {credential.tags.length == 0 && <Text style={styles.tagText}>Set tag</Text>}
+                    </TouchableOpacity>)}
+                    {credential.tags.length != 0 &&
+                        (<View style={{ height: 50 }}>
+                            <FlatList
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                data={credential.tags}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.tagItem,
+                                            { backgroundColor: item.colorHex },
+                                        ]}
+                                        onPress={() => {
+                                            setSelectedTag(item)
+                                            setTagDeleteVisible(true)
+                                        }}
+                                    >
+
+                                        <Octicons name={item.iconName as IconName} size={16} color={'#fff'} />
+                                        <Text style={styles.tagText}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            >
+                            </FlatList>
+                        </View>
+                        )}
                 </View>
 
                 <View style={styles.detailSection}>
@@ -157,6 +209,7 @@ export default function CredentialDetail() {
                         label="URL"
                         value={credential.url}
                         onPress={handleNavigateToUrl}
+                        actionIcon={'rocket'}
                     />
 
                     <View style={{ marginTop: 10 }}>
@@ -173,13 +226,12 @@ export default function CredentialDetail() {
                             editable
                             multiline
                             numberOfLines={4}
-                            style={{ fontSize: 18, height: 300 }}
+                            style={{ fontSize: 18, height: 250 }}
                             onChangeText={text => setNotes(text)}
                             placeholder='Insert some notes...'
                             placeholderTextColor="#999"
                             value={notes}
                             textAlignVertical="top"
-                            blurOnSubmit={true}
                             returnKeyType="done"
                         />
                     </View>
@@ -278,7 +330,59 @@ export default function CredentialDetail() {
                         </View>
                     </View>
                 </BottomSheet>
+
+                {/* Tag Selector Dialog */}
+                <Portal>
+                    <Dialog
+                        visible={tagSelectionVisible}
+                        onDismiss={() => setTagSelectionVisible(false)}
+                        style={styles.tagSelectionModal}
+                    >
+                        <TagsPicker tags={tags} onTagSelect={(newTag) => {
+                            if (!credential.tags.includes(newTag)) {
+                                newTag.addCredential(realm, credential)
+                                setTagSelectionVisible(false)
+                            }
+                        }} selectedTags={credential.tags} />
+                    </Dialog>
+                </Portal>
+
+                {/* Remove Tag Dialog */}
+                <Portal>
+                    <Dialog
+                        visible={tagDeleteVisible}
+                        onDismiss={() => setTagDeleteVisible(false)}
+                    >
+                        <Dialog.Content><ThemedText type='subtitle'>Remove tag from credential?</ThemedText></Dialog.Content>
+                        <Dialog.Actions>
+                            <Button buttonColor='red' style={{borderRadius: 10}} textColor='white' onPress={() => {
+                                if(selectedTag) {
+                                    selectedTag.removeCredential(realm, credential)
+                                }
+                                setTagDeleteVisible(false)
+                            }}>Remove</Button>
+                            <Button onPress={() => {
+                                setTagDeleteVisible(false)
+                            }}>Cancel</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+                </Portal>
             </ThemedView>
+
+            <Snackbar
+                visible={clipboardSnackbarVisible}
+                onDismiss={() => { }}
+            >
+                Colpied to clipboard.
+            </Snackbar>
+
+            <Snackbar
+                visible={notesSnackbarVisible}
+                onDismiss={() => { }}
+                style={{ backgroundColor: 'green' }}
+            >
+                Notes saved.
+            </Snackbar>
         </KeyboardAvoidingProvider>
     );
 }
@@ -319,11 +423,31 @@ const styles = StyleSheet.create({
         padding: 16,
         marginTop: 20
     },
+    tagSelectionModal: {
+        padding: 20
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 24,
+    },
+    tagText: {
+        color: 'white',
+        marginLeft: 6,
+        fontSize: 16
+    },
+    tagItem: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        minHeight: 40,
+        borderWidth: 4,
+        borderColor: 'white'
     },
     actions: {
         flexDirection: 'row',
@@ -391,4 +515,9 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '600',
     },
+    tagButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 16
+    }
 });

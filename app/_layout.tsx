@@ -12,6 +12,7 @@ import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MenuProvider } from 'react-native-popup-menu';
+import { PaperProvider } from 'react-native-paper';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -22,16 +23,9 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // const migrationFunction = (oldRealm: Realm, newRealm: Realm) => {
-  //   if (oldRealm.schemaVersion < 1) { // Increment your schema version
-  //     const oldTags = oldRealm.objects<Tag>('Tag');
-  //     const newTags = newRealm.objects<Tag>('Tag');
-
-  //     for (let i = 0; i < oldTags.length; i++) {
-  //       newTags[i].iconName = 'default-icon'; // Set default value for the new property
-  //     }
-  //   }
-  // };
+  /* const migrationFunction = (oldRealm: Realm, newRealm: Realm) => {
+  
+  }; */
 
 
   useEffect(() => {
@@ -46,8 +40,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <RealmProvider schemaVersion={2} schema={[Credential, Tag]}>
+      <RealmProvider schemaVersion={3} schema={[Credential, Tag]}>
         <GestureHandlerRootView>
+          <PaperProvider>
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen
@@ -56,6 +51,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="+not-found" />
           </Stack>
+          </PaperProvider>
         </GestureHandlerRootView>
         <StatusBar style="auto" />
       </RealmProvider>

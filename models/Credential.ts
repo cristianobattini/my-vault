@@ -59,20 +59,4 @@ export class Credential extends Realm.Object {
             this.updatedAt = new Date();
         });
     }
-
-    // Add a tag to the credential
-    addTag(realm: Realm, tag: Tag) {
-        realm.write(() => {
-            tag.addCredential(realm, this);
-            this.updatedAt = new Date();
-        });
-    }
-
-    // Remove a tag from the credential
-    removeTag(realm: Realm, tag: Tag) {
-        realm.write(() => {
-            tag.removeCredential(realm, this);
-            this.updatedAt = new Date();
-        });
-    }
 }
