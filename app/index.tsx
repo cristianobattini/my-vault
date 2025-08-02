@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import React, { useEffect, useState } from 'react';
-import { Animated, FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useQuery, useRealm } from '@realm/react';
 import { Credential } from '@/models/Credential';
 import { Tag } from '@/models/Tag';
@@ -17,6 +17,7 @@ import FloatingMenuButton from '@/components/FloatingButton';
 import FavoritesToggle from '@/components/FavoritesToggle';
 import { ObjectId } from 'bson';
 import IconPicker, { IconName } from '@/components/IconPicker';
+import { Link } from 'expo-router';
 
 const Index = () => {
     const realm = useRealm();
@@ -266,7 +267,12 @@ const Index = () => {
             {/* Main */}
             <ThemedView style={styles.container}>
                 <View style={styles.header}>
-                    <ThemedText type="title">MyVault</ThemedText>
+                    <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
+                        <Link href={'/settings'}>
+                            <Octicons name='gear' size={28} />
+                        </Link>
+                        <ThemedText type="title">MyVault</ThemedText>
+                    </View>
                     <FavoritesToggle onToggleFavorite={() => {
                         setShowFavorites(true)
                     }} onToggleNotFavorite={() => {
@@ -334,7 +340,7 @@ const Index = () => {
                         keyExtractor={(item) => item._id.toHexString()}
                         contentContainerStyle={styles.credentialList}
                         renderItem={({ item }) => (
-                            <CredentialCard item={item} />
+                            <CredentialCard item={item}/>
                         )}
                     />
                 )}

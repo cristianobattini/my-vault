@@ -3,7 +3,7 @@ import { Tag } from '@/models/Tag';
 import { Octicons } from '@expo/vector-icons';
 import { useQuery } from '@realm/react';
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, FlatList } from 'react-native';
 import { IconName } from './IconPicker';
 import { List } from 'realm';
 
@@ -31,30 +31,36 @@ export default function TagsPicker({
 
     return (
         <View style={styles.container}>
-            {filteredTags.map((tag) => (
-                <TouchableOpacity
-                    style={[
-                        styles.tagOption,
-                        isSelected(tag) && styles.selectedTag,
-                        { backgroundColor: tag.colorHex + '20' }, 
-                    ]}
-                    onPress={() => onTagSelect(tag)}
-                >
-                    <Octicons name={tag.iconName as IconName ?? 'tag'} size={18} />
-                    <Text
+            <FlatList
+                data={filteredTags}
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item._id.toString()}
+                renderItem={({ item: tag }) => (
+                    <TouchableOpacity
                         style={[
-                            styles.tagText,
-                            { color: textColor },
-                            isSelected(tag) && { color: tag.colorHex, fontWeight: 'bold' }
+                            styles.tagOption,
+                            isSelected(tag) && styles.selectedTag,
+                            { backgroundColor: tag.colorHex + '20' },
                         ]}
+                        onPress={() => onTagSelect(tag)}
                     >
-                        {tag.name}
-                    </Text>
-                    {isSelected(tag) && (
-                        <View style={[styles.checkMark, { borderColor: tag.colorHex }]} />
-                    )}
-                </TouchableOpacity>
-            ))}
+                        <Octicons name={tag.iconName as IconName ?? 'tag'} size={18} />
+                        <Text
+                            style={[
+                                styles.tagText,
+                                { color: textColor },
+                                isSelected(tag) && { color: tag.colorHex, fontWeight: 'bold' }
+                            ]}
+                        >
+                            {tag.name}
+                        </Text>
+                        {isSelected(tag) && (
+                            <View style={[styles.checkMark, { borderColor: tag.colorHex }]} />
+                        )}
+                    </TouchableOpacity>
+                )}
+                contentContainerStyle={styles.container}
+            />
 
             {onCreateNew && (
                 <TouchableOpacity

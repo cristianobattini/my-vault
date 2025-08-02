@@ -152,7 +152,7 @@ export default function CredentialDetail() {
                 </View>
 
                 <View style={{ flexDirection: 'row', marginBottom: 5, gap: 2 }}>
-                    {credential.tags.length != tags.length && (<TouchableOpacity onPress={() => setTagSelectionVisible(true)} style={[styles.tagItem, { backgroundColor: 'green', gap: 5 }]}>
+                    {credential.tags.length != tags.length && (<TouchableOpacity onPress={() => setTagSelectionVisible(true)} style={[styles.tagItem, { backgroundColor: 'grey', gap: 5 }]}>
                         <Octicons name='plus' color={'white'} size={18} />
                         {credential.tags.length == 0 && <Text style={styles.tagText}>Set tag</Text>}
                     </TouchableOpacity>)}

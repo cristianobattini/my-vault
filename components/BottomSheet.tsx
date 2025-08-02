@@ -71,12 +71,10 @@ const BottomSheet = ({ visible, children, heightPrecentile, onRequestClose }: Bo
       visible={visible} 
       transparent={true} 
       animationType="none" 
-      onRequestClose={onRequestClose}
     >
       <TouchableOpacity 
         activeOpacity={1}
         style={styles.overlay}
-        onPress={onRequestClose}
       >
         <View style={styles.modalContainer}>
           <Animated.View 
