@@ -3,7 +3,6 @@ import CryptoJS from 'crypto-js';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Credential } from '@/models/Credential';
-import Constants from 'expo-constants';
 import { Tag } from '@/models/Tag';
 import * as SecureStore from 'expo-secure-store';
 import * as Application from 'expo-application';
@@ -26,7 +25,7 @@ class RealmDataService {
             // 3. Hardcoded component
             const randomPart = getRandomBytes(16).toString();
             const devicePart = Application.getAndroidId || (await Application.getIosIdForVendorAsync()) || '';
-            const staticPart = Constants.expoConfig?.extra?.saltBase;
+            const staticPart = process.env.APP_ENCRYPTION_SALT_BASE;
 
 
             salt = `${staticPart}${devicePart}${randomPart}`.substring(0, 32);
